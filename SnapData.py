@@ -62,10 +62,10 @@ class SnapData:
         except:
             self.num = 0
 
-        self.grid_fields = {"PartType0":{},"PartType1":{},"PartType2":{},"PartType3":{},"PartType4":{},"PartType5":{}}
+        self.grid_fields = [{},{},{},{},{},{}]
 
 
     def ComputeField(self, ptype, field, rmax, gridres=400, plane='z'):
         function = getattr(Fields, field)
-        self.grid_fields["PartType%d"%ptype][field] = function(self, ptype, rmax, gridres,plane=plane)
-        return self.grid_fields["PartType%d"%ptype][field]
+        self.grid_fields[ptype][field] = function(self, ptype, rmax, gridres,plane=plane)
+        return self.grid_fields[ptype][field]

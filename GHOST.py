@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-GHOST: Gadget Hdf5 Output Slice and rayTrace
+GHOST: Gizmo Hdf5 Output Slice and rayTrace
 
   |\____
 (:o ___/
@@ -69,4 +69,8 @@ if nproc > 1:
     from joblib import Parallel, delayed, cpu_count
 
 
-data = SnapData(center=np.array([0,0,0]), periodic=False, verbose=False, n_ngb=32)
+for f in filenames:
+    data = SnapData(f, center=np.array([0,0,0]), periodic=False, verbose=False, n_ngb=32)
+
+    #compute the stuff we asked it to
+    
