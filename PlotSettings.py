@@ -3,7 +3,7 @@ proj_fields = "SurfaceDensity", "SigmaV", "KineticEnergy", "Q", "SFDensity", "Ma
 slice_fields = "Density", "NumberDensity", "Temperature", "MagEnergyDensity", "JeansMass", "B_z", "B_x", "B_y", "B", "CosmicRayEnergy"
 
 # Fields to actually plot
-fields_toplot = {0: ["SurfaceDensity"],
+fields_toplot = {0: ["SurfaceDensity", "AverageTemperature"],
                  1: [],
                  2: [],
                  3: [],
