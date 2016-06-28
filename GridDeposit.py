@@ -1,4 +1,4 @@
-from numba import jit, vectorize, float32, float64
+from numba import jit, vectorize, float32, float64, autojit
 import numpy as np
 
 @vectorize([float32(float32), float64(float64)])
@@ -64,6 +64,38 @@ def GridSurfaceDensity(mass, x, h, gridres, rmax):
                 kernel = Kernel2D(((xs[0] - gx*dx)**2 + (xs[1] - gy*dx)**2)**0.5 / hs)
                 grid[gx,gy] +=  kernel * mh2
                 
+    return grid
+
+@jit
+def GridProject(f, x, h, gridres, rmax):
+    L = rmax*2
+    Nf = len(f)
+    grid = np.zeros((gridres,gridres, Nf))
+    fh2 = np.zeros(len(f))
+    dx = L/(gridres-1)
+    N = len(x)
+    for i in xrange(N):
+        xs = x[i] + rmax
+        hs = h[i]
+        for j in xrange(Nf):
+            fh2[j] = f[j,i]/hs**2
+
+        gxmin = max(int((xs[0] - hs)/dx+1),0)
+        gxmax = min(int((xs[0] + hs)/dx),gridres-1)
+        gymin = max(int((xs[1] - hs)/dx+1), 0)
+        gymax = min(int((xs[1] + hs)/dx), gridres-1)
+        
+        for gx in xrange(gxmin, gxmax+1):
+            for gy in xrange(gymin,gymax+1):
+                kernel = Kernel2D(((xs[0] - gx*dx)**2 + (xs[1] - gy*dx)**2)**0.5 / hs)
+                for j in xrange(Nf):
+                    grid[gx,gy, j] +=  kernel * fh2[j]
+                    
+#    for gx in xrange(gridres):
+#        for gy in xrange(gridres):
+#            for j in xrange(1,Nf):
+#                grid[gx,gy,j] /= grid[gx,gy,0]
+
     return grid
 
 @jit

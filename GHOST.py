@@ -29,10 +29,11 @@ Options:
     --clusters
 """
 
-import matplotlib as mpl
-mpl.use('Agg')
+#import matplotlib as mpl
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 from PlotSettings import *
+from time import time
 from PIL import Image, ImageDraw, ImageFont
 from SnapData import SnapData                                   
 import h5py
@@ -41,13 +42,16 @@ from scipy import spatial, misc
 from matplotlib.colors import LogNorm
 import re
 import SmoothingLength
+from macros import macros
 from docopt import docopt
 from GridDeposit import *
+import Fields
+from Fields import *
 
 arguments = docopt(__doc__)
 filenames = arguments["<files>"]
 rmax = float(arguments["--rmax"])
-plane = arguments["--plane"]
+planes = arguments["--plane"].split(',')
 center = np.array([float(c) for c in re.split(',', arguments["--c"])])
 verbose = arguments["--verbose"]
 AA = arguments["--antialiasing"]
@@ -68,9 +72,57 @@ font = ImageFont.truetype("LiberationSans-Regular.ttf", gridres/12)
 if nproc > 1:
     from joblib import Parallel, delayed, cpu_count
 
+#def ParsePlotString(pstring):
+#    if "from" in pstring:
+#        pstring, limits = pstring.split("from")
+#        limits = [float(f) for f in limits.split('to')]
+#    else:
+#        expression = pstring
+#        limits = None
+#    if "//" in pstring:
+#        numerator, denominator = pstring.split("//")
+#    else:
+#        numerator, denominator = pstring, None
+#    return numerator, denominator, limits
+
+def CoordTransform(coords, plane):
+    if plane != 'z':
+        x, y, z = coords.T
+        return {"x": np.c_[y,z,x], "y": np.c_[x,z,y]}[plane]
+    else:
+        return coords            
 
 for f in filenames:
-    data = SnapData(f, center=np.array([0,0,0]), periodic=False, verbose=False, n_ngb=32)
-
-    #compute the stuff we asked it to
+    #Load the file and extract particle data
+    data = SnapData(f, center=np.array([0,0,0]), periodic=False, verbose=verbose, n_ngb=32)
     
+    #clip smoothing length to grid dx to avoid aliasing
+    for d in data.particle_data:
+        if "SmoothingLength" in d.keys():
+            d["SmoothingLength"] = np.clip(d["SmoothingLength"], 2*rmax/(gridres-1), 1e100)
+
+#    plot_limits = {}
+    #do our projections, slices and variances type by type
+    for ptype, d in enumerate(data.particle_data):
+        if not ptype in plots_todo.keys(): continue
+        if len(plots_todo[ptype]) == 0: continue
+        if not "Coordinates" in d.keys(): continue
+        projfields = {}
+        #make sure we have all the particle data we need and stick em all in one big array
+        for field in plots_todo[ptype]:
+            for r in requirements[field]:
+                if not r in data.particle_data[ptype].keys():
+                    getattr(Fields, "Compute"+r)(d)
+                projfields[r] = d[r]
+            
+        pdata = np.array(projfields.values())
+        pdata[1:] *= pdata[0]
+
+        
+        for plane in planes:
+            griddata = GridProject(pdata, CoordTransform(d["Coordinates"],plane), d["SmoothingLength"], gridres, rmax)
+            plt.imshow(np.log10(griddata[:,:,0]), cmap='inferno')
+            plt.show()
+        
+        
+        

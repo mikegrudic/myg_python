@@ -1,5 +1,12 @@
 from GridDeposit import *
 
+requirements = {
+    "SurfaceDensity": ["Masses",],
+    "Density": ["Masses", "Density"],
+    "AverageDensity": ["Masses", "Density"],
+    "AverageTemperature": ["Temperature",]
+}
+
 def ComputeTemperature(d):
     gamma = 5.0/3.0
     y_He = 0.24  / (4*(1-0.24))
@@ -8,16 +15,9 @@ def ComputeTemperature(d):
     else:
         a_e = 0.0
     mu = (1 + 4*y_He) / (1 + y_He + a_e)
-#    mu = 4.0 / (3.0 * x_H + 1.0 + 4.0 * x_H * a_e)
     d["Temperature"] = d["InternalEnergy"]*mu*(gamma-1)*121.128
-#    print d["Temperature"].mean()
 
-def CoordTransform(coords, plane):
-    if plane != 'z':
-        x, y, z = coords.T
-        return {"x": np.c_[y,z,x], "y": np.c_[x,z,y]}[plane]
-    else:
-        return coords
+
 
 def Density(snapdata, ptype, rmax, gridres, z=0.0, plane='z'):
     d = snapdata.field_data[ptype]

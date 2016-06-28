@@ -18,7 +18,7 @@ class SnapData:
         
         particle_counts = header_toparse["NumPart_ThisFile"]
         
-        self.field_data = [{}, {}, {}, {}, {}, {}]
+        self.particle_data = [{}, {}, {}, {}, {}, {}]
         r = {}
         
         for i, n in enumerate(particle_counts):
@@ -37,22 +37,22 @@ class SnapData:
 #            filter = np.max(np.abs(X), axis=1) <= 1e100
             
             for key in ptype.keys():
-                self.field_data[i][key] = np.array(ptype[key])
+                self.particle_data[i][key] = np.array(ptype[key])
 
-            self.field_data[i]["Coordinates"] = X
+            self.particle_data[i]["Coordinates"] = X
             if not "Masses" in ptype.keys():
-                self.field_data[i]["Masses"] = f["Header"].attrs["MassTable"][i] * np.ones_like(self.field_data[i]["Coordinates"][:,0])
+                self.particle_data[i]["Masses"] = f["Header"].attrs["MassTable"][i] * np.ones_like(self.particle_data[i]["Coordinates"][:,0])
             if not "SmoothingLength" in ptype.keys():
-                if "AGS-Softening" in ptype.keys() and i != 4 and False:
-                    self.field_data[i]["SmoothingLength"] = np.array(ptype["AGS-Softening"])
+                if "AGS-Softening" in ptype.keys() and False:
+                    self.particle_data[i]["SmoothingLength"] = np.array(ptype["AGS-Softening"])
                 else:
                     if verbose: print("Computing smoothing length for %s..." % pname.lower())
-                    self.field_data[i]["SmoothingLength"] = SmoothingLength(self.field_data[i]["Coordinates"], des_ngb=n_ngb, box_size=box_size)
+                    self.particle_data[i]["SmoothingLength"] = SmoothingLength(self.particle_data[i]["Coordinates"], des_ngb=n_ngb, box_size=box_size)
                 if verbose: print "done!"
             if not "Density" in ptype.keys():
-                self.field_data[i]["Density"] = self.field_data[i]["Masses"]*32 / (4*np.pi * self.field_data[i]["SmoothingLength"]**3 / 3)
+                self.particle_data[i]["Density"] = self.particle_data[i]["Masses"]*32 / (4*np.pi * self.particle_data[i]["SmoothingLength"]**3 / 3)
         if "PartType5" in f.keys():
-            self.field_data[5]["Coordinates"] = np.array(f["PartType5"]["Coordinates"]) - center
+            self.particle_data[5]["Coordinates"] = np.array(f["PartType5"]["Coordinates"]) - center
         f.close()
 
         if verbose: print("Reticulating splines...")        
