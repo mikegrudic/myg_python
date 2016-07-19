@@ -10,11 +10,17 @@ def SmoothingLength(coords, des_ngb=32, box_size=None):
     neighbor_dists, neighbors = tree.query(coords, des_ngb)
 #    if len(coords) < des_ngb:
 #        return np.ones(len(coords))*neighbor_dists.max()
-    hsml = HsmlIter(neighbors, neighbor_dists)
+    hsml = HsmlIter(neighbors, neighbor_dists,dim=coords.shape[1])
     return hsml
 
 @jit
-def HsmlIter(neighbors, neighbor_dists, error_norm=1e-3):
+def HsmlIter(neighbors, neighbor_dists, error_norm=1e-3, dim=3):
+    if dim==3:
+        norm = 32./3
+    elif dim==2:
+        norm = 40./7
+    else:
+        norm = 8./3
     N, des_ngb = neighbor_dists.shape
     hsml = np.zeros(N)
     n_ngb = 0.0
@@ -34,7 +40,7 @@ def HsmlIter(neighbors, neighbor_dists, error_norm=1e-3):
                     n_ngb += (1 - 6*q**2 + 6*q**3)
                 elif q <= 1.0:
                     n_ngb += 2*(1-q)**3
-            n_ngb *= 32./3
+            n_ngb *= norm
             if n_ngb > des_ngb:
                 upper = h
             else:
