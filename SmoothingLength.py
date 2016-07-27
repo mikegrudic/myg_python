@@ -14,7 +14,7 @@ def SmoothingLength(coords, des_ngb=32, box_size=None):
     return hsml
 
 @jit
-def HsmlIter(neighbors, neighbor_dists, error_norm=1e-3, dim=3):
+def HsmlIter(neighbor_dists, error_norm=1e-3, dim=3):
     if dim==3:
         norm = 32./3
     elif dim==2:
@@ -24,8 +24,9 @@ def HsmlIter(neighbors, neighbor_dists, error_norm=1e-3, dim=3):
     N, des_ngb = neighbor_dists.shape
     hsml = np.zeros(N)
     n_ngb = 0.0
+    bound_coeff = (1./(1-(2*norm)**(-1./3)))
     for i in xrange(N):
-        upper = neighbor_dists[i,des_ngb-1]/0.6
+        upper = neighbor_dists[i,des_ngb-1] * bound_coeff
         lower = neighbor_dists[i,1]
         error = 1e100
         count = 0
