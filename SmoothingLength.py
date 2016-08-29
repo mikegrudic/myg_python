@@ -2,19 +2,18 @@ import numpy as np
 from numba import jit, vectorize, float32, float64, autojit
 from scipy.spatial import cKDTree
 
-def SmoothingLength(coords, des_ngb=32, box_size=None):
+def SmoothingLength(coords, des_ngb=32, box_size=None, error_norm=1e-12):
     if box_size == None:
         tree = cKDTree(coords)
     else:
         tree = cKDTree((coords+box_size/2)%box_size, box_size=box_size)
     neighbor_dists, neighbors = tree.query(coords, des_ngb)
-#    if len(coords) < des_ngb:
-#        return np.ones(len(coords))*neighbor_dists.max()
-    hsml = HsmlIter(neighbors, neighbor_dists,dim=coords.shape[1])
+
+    hsml = HsmlIter(neighbor_dists,dim=coords.shape[1], error_norm = error_norm)
     return hsml
 
 @jit
-def HsmlIter(neighbor_dists, error_norm=1e-3, dim=3):
+def HsmlIter(neighbor_dists, error_norm=1e-3, dim=3, error_norm=error_norm):
     if dim==3:
         norm = 32./3
     elif dim==2:
