@@ -13,7 +13,7 @@ def SmoothingLength(coords, des_ngb=32, box_size=None, error_norm=1e-12):
     return hsml
 
 @jit
-def HsmlIter(neighbor_dists, error_norm=1e-3, dim=3, error_norm=error_norm):
+def HsmlIter(neighbor_dists,  dim=3, error_norm=1e-3):
     if dim==3:
         norm = 32./3
     elif dim==2:
