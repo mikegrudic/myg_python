@@ -1,5 +1,5 @@
 #MESHOID: MESHless Operations including Integrals and Derivatives
-# "It's not a mesh; it's a meshoid!"
+# "It's not a mesh; it's a meshoid!" - Jesus H. Christ
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -11,12 +11,15 @@ class meshoid(object):
             x = x[:,None]
 
         self.N, self.dim = x.shape
-        if fixed_h==None and des_ngb is None:
-            des_ngb = {1: 4, 2: 20, 3:32}[self.dim]
-            self.des_ngb = des_ngb
+        if des_ngb==None:
+            if fixed_h == None: 
+                des_ngb = {1: 4, 2: 20, 3:32}[self.dim]
             
-        self.volnorm = {1: 2.0, 2: np.pi, 3: 4*np.pi/3}[self.dim]
+
         self.fixed_h = fixed_h
+        self.des_ngb = des_ngb    
+        print self.des_ngb    
+        self.volnorm = {1: 2.0, 2: np.pi, 3: 4*np.pi/3}[self.dim]
         self.boxsize = boxsize
         
         if m==None:
