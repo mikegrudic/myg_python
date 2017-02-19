@@ -6,7 +6,7 @@ from scipy.spatial import cKDTree
 from numba import jit, vectorize, float32, float64
 
 class meshoid(object):
-    def __init__(self, x, m=None, des_ngb=None,boxsize=None, fixed_h = None): 
+    def __init__(self, x, masses=None, des_ngb=None,boxsize=None, fixed_h = None): 
         if len(x.shape)==1:
             x = x[:,None]
 
@@ -22,9 +22,9 @@ class meshoid(object):
         self.volnorm = {1: 2.0, 2: np.pi, 3: 4*np.pi/3}[self.dim]
         self.boxsize = boxsize
         
-        if m==None:
-            m = np.repeat(1./len(x),len(x))
-        self.m = m
+        if masses==None:
+            masses = np.repeat(1./len(x),len(x))
+        self.m = masses
         self.x = x
         
         self.TreeUpdate()
@@ -38,8 +38,14 @@ class meshoid(object):
             Periodicize(dx.ravel(), self.boxsize)
 
         dx_matrix = np.einsum('ij,ijk,ijl->ikl', self.weights, dx, dx)
+        
         dx_matrix = np.linalg.inv(dx_matrix)
         self.dweights = np.einsum('ikl,ijl,ij->ijk',dx_matrix, dx, self.weights)
+
+        dx2_matrix = np.einsum('ijk,ijl->ikl',dx,dx)
+        dx2_matrix = np.einsum('ijk,ijl->ikl',dx2_matrix.flatten(), dx2_matrix.flatten())
+        
+        
     
     def TreeUpdate(self):
         if self.fixed_h == None:
