@@ -1,8 +1,9 @@
 #MESHOID: MESHless Operations including Integrals and Derivatives
-# "It's not a mesh; it's a meshoid!" - Jesus H. Christ
+# "It's not a mesh; it's a meshoid!" - Alfred Einstimes
 
 import numpy as np
 from scipy.spatial import cKDTree
+from scipy.linalg import inv
 from numba import jit, vectorize, float32, float64
 
 class meshoid(object):
@@ -33,17 +34,16 @@ class meshoid(object):
 
     def ComputeWeights(self):
         dx = self.x[self.ngb] - self.x[:,None,:]
-
+        self.dx = dx
         if self.boxsize != None:
             Periodicize(dx.ravel(), self.boxsize)
-
+    
         dx_matrix = np.einsum('ij,ijk,ijl->ikl', self.weights, dx, dx)
         
         dx_matrix = np.linalg.inv(dx_matrix)
         self.dweights = np.einsum('ikl,ijl,ij->ijk',dx_matrix, dx, self.weights)
-
-        dx2_matrix = np.einsum('ijk,ijl->ikl',dx,dx)
-        dx2_matrix = np.einsum('ijk,ijl->ikl',dx2_matrix.flatten(), dx2_matrix.flatten())
+        
+        self.d2weights = d2weights(dx, self.weights)
         
         
     
@@ -73,6 +73,12 @@ class meshoid(object):
             self.ComputeWeights()
         return np.einsum('ijk,ij->ik',self.dweights,df)
 
+    def D2(self ,f):
+        df = DF(f, self.ngb)
+        if self.d2weights==None:
+            self.ComputeWeights()
+        return np.einsum('ij,ij->i',self.d2weights[:,:,2],df-np.einsum('ik,ijk->ij',self.D(f),self.dx))
+    
     def Integrate(self, f):
         return np.einsum('i,i...->...', self.vol,f)
 
@@ -81,7 +87,47 @@ class meshoid(object):
     
     def KernelAverage(self, f):
         return np.einsum('ij,ij->i',self.weights, f[self.ngb])
-        
+
+@jit
+def d2weights(dx, w):
+    N = w.shape[0]
+    Nngb = w.shape[1]
+    dim = dx.shape[-1]
+    
+    N2 = dim*(dim+1)/2
+    M = np.zeros((N,N2,N2))
+
+    dx2 = np.empty((N, Nngb,N2))
+    d2weights = np.zeros((N,Nngb, N2))
+    for i in xrange(N):
+        for j in xrange(Nngb):
+            weight = w[i,j]
+            for k in xrange(dim):
+                for l in xrange(dim):
+                    if l < k: continue
+                    n = (dim-1)*k + l
+                    #if l==k:
+                    dx2[i, j,n] = 0.5*dx[i,j,k]*dx[i,j,l]
+                    #else:
+                     #   dx2[i, j,n] = dx[i,j,k]*dx[i,j,l]
+            
+            for p in xrange(N2):
+                for q in xrange(N2):
+                    M[i,p,q] += weight * dx2[i,j,p] * dx2[i,j,q]
+                    
+    M = np.linalg.inv(M)
+    
+    for i in xrange(N):
+        for j in xrange(Nngb):
+            weight = w[i,j]
+            for p in xrange(N2):
+                for q in xrange(N2):
+                    d2weights[i,j,p] += M[i,p,q] * dx2[i,j,q] * weight
+
+    return d2weights
+                    
+
+
 @jit
 def HsmlIter(neighbor_dists,  dim=3, error_norm=1e-6):
     if dim==3:
